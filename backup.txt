@@ -1,0 +1,342 @@
+import java.awt.EventQueue;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.border.EmptyBorder;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.SwingConstants;
+import java.awt.Font;
+import java.awt.Color;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Scanner;
+import java.util.Set;
+
+import javax.swing.JTextField;
+
+public class Carton extends JFrame {
+    private JPanel txtnombre;
+    private JButton[] nums = new JButton[27];
+    private JButton btnbingo;
+    private JButton btnlinea;
+    private JButton btnSal;
+    private static String nombrelin = "anonymus";
+    private static PrintWriter writer;
+    private JButton[] arraylinea = new JButton[9];
+    private JButton[] arraylinea2 = new JButton[9];
+    private JButton[] arraylinea3 = new JButton[9];
+    private JTextField textnombre;
+    private List<Integer> uniqueNumbers;
+
+    public static void main(String[] args) {
+        try {
+            BufferedReader br = new BufferedReader(new FileReader("\\\\192.168.0.29\\bingo\\estado.txt"));
+            String estado = br.readLine();
+            br.close();
+
+            if ("true".equals(estado.trim())) {
+                EventQueue.invokeLater(new Runnable() {
+                    public void run() {
+                        try {
+                            Carton frame = new Carton();
+                            frame.setVisible(true);
+                        } catch (Exception e) {
+                        	 JOptionPane.showConfirmDialog(null, "error al conectar a la databse");
+                        	 System.exit(0);
+                        }
+                    }
+                });
+            } else {
+                JOptionPane.showMessageDialog(null, "El programa todavía no se ha iniciado");
+                System.exit(0);
+            }
+        } catch (IOException e) {
+            JOptionPane.showConfirmDialog(null, "Error al conectar al database");
+        }
+    }
+
+    public Carton() {
+        setDefaultLookAndFeelDecorated(true);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setBounds(100, 100, 1326, 469);
+        txtnombre = new JPanel();
+        txtnombre.setBackground(new Color(30, 144, 255));
+        txtnombre.setBorder(new EmptyBorder(5, 5, 5, 5));
+        setContentPane(txtnombre);
+        txtnombre.setLayout(null);
+
+        int buttonCount = 0;
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 9; j++) {
+                nums[buttonCount] = new JButton("");
+                nums[buttonCount].setFont(new Font("Tahoma", Font.BOLD, 35));
+                nums[buttonCount].setBounds(10 + j * 110, 56 + i * 101, 100, 90);
+                txtnombre.add(nums[buttonCount]);
+                if (i == 0) {
+                    arraylinea[j] = nums[buttonCount];
+                } else if (i == 1) {
+                    arraylinea2[j] = nums[buttonCount];
+                } else if (i == 2) {
+                    arraylinea3[j] = nums[buttonCount];
+                }
+                buttonCount++;
+            }
+        }
+
+        uniqueNumbers = generateUniqueRandomNumbers(1, 90, 27);
+        assignButtonsToColumns();  // Move this line before using uniqueNumbers
+
+        Collections.shuffle(uniqueNumbers);
+
+        for (int i = 0; i < nums.length; i++) {
+            nums[i].setText(uniqueNumbers.get(i).toString());
+        }
+
+        JLabel lblNewLabel = new JLabel("Bingo ALMINGO !!!");
+        lblNewLabel.setForeground(new Color(255, 250, 250));
+        lblNewLabel.setFont(new Font("Tahoma", Font.BOLD, 18));
+        lblNewLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        lblNewLabel.setBounds(39, 11, 1233, 32);
+        txtnombre.add(lblNewLabel);
+
+        btnbingo = new JButton("Bingoo");
+        btnbingo.setFont(new Font("Tahoma", Font.PLAIN, 18));
+        btnbingo.setBounds(1093, 58, 103, 77);
+        txtnombre.add(btnbingo);
+
+        btnlinea = new JButton("Linea");
+        btnlinea.setFont(new Font("Tahoma", Font.BOLD, 16));
+        btnlinea.setBounds(1093, 146, 103, 77);
+        txtnombre.add(btnlinea);
+
+        btnSal = new JButton("SALIR");
+        btnSal.setForeground(new Color(192, 192, 192));
+        btnSal.setBackground(new Color(128, 0, 0));
+        btnSal.setFont(new Font("Tahoma", Font.PLAIN, 16));
+        btnSal.setBounds(1169, 323, 103, 53);
+        txtnombre.add(btnSal);
+
+        JLabel lblNewLabel_1 = new JLabel("Bienvenido");
+        lblNewLabel_1.setFont(new Font("Tahoma", Font.BOLD, 11));
+        lblNewLabel_1.setBounds(10, 11, 72, 14);
+        txtnombre.add(lblNewLabel_1);
+
+        textnombre = new JTextField();
+        textnombre.setEditable(false);
+        textnombre.setFont(new Font("Tahoma", Font.BOLD, 14));
+        textnombre.setBackground(new Color(0, 128, 255));
+        textnombre.setBounds(78, 7, 244, 20);
+        txtnombre.add(textnombre);
+        textnombre.setColumns(10);
+
+        enableRandomButtons(arraylinea, 5);
+        enableRandomButtons(arraylinea2, 5);
+        enableRandomButtons(arraylinea3, 5);
+
+        nombrelin = JOptionPane.showInputDialog("Pon el nombre del jugador");
+
+        if (nombrelin == null || nombrelin.trim().isEmpty()) {
+            nombrelin = "anonymous" + (int) (Math.random() * 1000 + 1);
+        }
+        textnombre.setText(nombrelin);
+
+        eventos();
+    }
+
+    private List<Integer> generateUniqueRandomNumbers(int min, int max, int count) {
+        List<Integer> numbers = new ArrayList<>();
+        for (int i = min; i <= max; i++) {
+            numbers.add(i);
+        }
+        Collections.shuffle(numbers);
+        return numbers.subList(0, count);
+    }
+    
+    private void eventos() {
+        for (int i = 0; i < nums.length; i++) {
+            final JButton button = nums[i];
+            button.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    if (button.isEnabled()) {
+                        button.setEnabled(false);
+                        int clickedNumber = Integer.parseInt(button.getText());
+                        uniqueNumbers.remove(Integer.valueOf(clickedNumber));
+                    }
+                }
+            });
+        }
+
+        btnSal.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                if (JOptionPane.showConfirmDialog(Carton.this, "¿Estás seguro que quieres salir?", "Aviso",
+                        JOptionPane.YES_NO_OPTION) == JOptionPane.YES_OPTION) {
+                    System.exit(0);
+                }
+            }
+        });
+
+        btnlinea.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                boolean comlin1 = complinea(arraylinea);
+                boolean comlin2 = complinea(arraylinea2);
+                boolean comlin3 = complinea(arraylinea3);
+
+                if (comlin1 || comlin2 || comlin3) {
+                    System.out.println("Hay linea");
+                    linea();
+                } else {
+                    JOptionPane.showMessageDialog(Carton.this, "No hay linea");
+                }
+            }
+        });
+
+        btnbingo.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                boolean combin = false;
+                combin = compbingo();
+
+                if (combin) {
+                    bingo();
+                } else {
+                    JOptionPane.showMessageDialog(Carton.this, "NO Hay bingo intentalo de nuevo");
+                }
+            }
+        });
+    }
+
+    private void assignButtonsToColumns() {
+        for (int i = 0; i < 9; i++) {
+            List<Integer> columnNumbers = generateUniqueRandomNumbersForColumn(i);
+            for (int j = 0; j < 3; j++) {
+                JButton button = nums[i * 3 + j];
+                button.setText(columnNumbers.get(j).toString());
+            }
+        }
+    }
+
+    private List<Integer> generateUniqueRandomNumbersForColumn(int column) {
+        int min = column * 10 + 1;
+        int max = column * 10 + 10;
+        return generateUniqueRandomNumbers(min, max, 3);
+    }
+
+    protected boolean complinea(JButton[] arraylinea) {
+        Set<String> numerosEnArrayLinea = new HashSet<>();
+        Set<String> numerosEnArchivo = new HashSet<>();
+        String fileName = "\\192.168.0.29\\bingo\\numeros.txt";
+
+        // Obtener los números de arraylinea como cadenas solo para botones activos y con números asignados
+        for (JButton button : arraylinea) {
+            if (button.isEnabled() && !button.getText().isEmpty()) {
+                numerosEnArrayLinea.add(button.getText());
+            }
+        }
+
+        // Leer los números del archivo "numeros.txt" y almacenarlos en un conjunto
+        try {
+            File file = new File(fileName);
+            Scanner scanner = new Scanner(file);
+
+            while (scanner.hasNext()) {
+                String numero = scanner.next();
+                numerosEnArchivo.add(numero);
+            }
+
+            scanner.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return false; // En caso de error al leer el archivo
+        }
+
+        // Comprobar si todos los números de arraylinea están en el archivo
+        return numerosEnArchivo.containsAll(numerosEnArrayLinea);
+    }
+
+    protected boolean compbingo() {
+        Set<String> numerosEnArrayLinea = new HashSet<>();
+        Set<String> numerosEnArchivo = new HashSet<>();
+        String fileName = "\\\\192.168.0.29\\bingo\\numeros.txt";
+
+        // Obtener los números de arraylinea como cadenas solo para botones activos y con números asignados
+        for (JButton button : nums) {
+            if (button.isEnabled() && !button.getText().isEmpty()) {
+                numerosEnArrayLinea.add(button.getText());
+            }
+        }
+
+        // Leer los números del archivo "numeros.txt" y almacenarlos en un conjunto
+        try {
+            File file = new File(fileName);
+            Scanner scanner = new Scanner(file);
+
+            while (scanner.hasNext()) {
+                String numero = scanner.next();
+                numerosEnArchivo.add(numero);
+            }
+
+            scanner.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return false; // En caso de error al leer el archivo
+        }
+
+        // Comprobar si todos los números de arraylinea están en el archivo
+        return numerosEnArchivo.containsAll(numerosEnArrayLinea);
+    }
+
+    public static void bingo() {
+        try {
+            writer = new PrintWriter("\\\\192.168.0.29\\bingo\\bl.txt");
+            writer.println("bingo");
+            writer.close();
+        } catch (FileNotFoundException e1) {
+            e1.printStackTrace();
+        }
+    }
+
+    public static void linea() {
+        try {
+            writer = new PrintWriter("\\\\192.168.0.29\\bingo\\bl.txt");
+            writer.println("linea");
+            writer.close();
+
+            writer = new PrintWriter("\\\\192.168.0.29\\bingo\\nomlin.txt");
+            writer.println(nombrelin);
+            writer.close();
+
+        } catch (FileNotFoundException e1) {
+            e1.printStackTrace();
+        }
+    }
+
+    public static void enableRandomButtons(JButton[] array, int countToEnable) {
+        Random random = new Random();
+        int totalButtons = array.length;
+        List<Integer> buttonIndices = new ArrayList<>();
+        for (int i = 0; i < totalButtons; i++) {
+            buttonIndices.add(i);
+        }
+        Collections.shuffle(buttonIndices);
+
+        for (int i = 0; i < totalButtons; i++) {
+            if (i < countToEnable) {
+                array[buttonIndices.get(i)].setEnabled(true);
+            } else {
+                array[buttonIndices.get(i)].setEnabled(false);
+                array[buttonIndices.get(i)].setText("");
+            }
+        }
+    }
+}
